@@ -48,6 +48,12 @@
             channel = "stable";
           };
 
+          pre-commit.hooks = {
+            cargo-check.enable = true;
+            clippy.enable = true;
+            rustfmt.enable = true;
+          };
+
           # https://devenv.sh/reference/options/
           packages = [config.packages.default];
 
