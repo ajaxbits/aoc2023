@@ -1,19 +1,14 @@
-use std::str::Chars;
-
+use rayon::prelude::*;
 pub fn problem_1(input: String) -> u32 {
-    let scrambled_calibration_values: Vec<&str> = input.lines().collect();
-    scrambled_calibration_values
-        .into_iter()
+    input
+        .par_lines()
         .map(|s| {
-            let first: u32 = s
-                .chars()
-                .map(|c: char| c.to_digit(10))
+            let digits = s.chars().map(|c: char| c.to_digit(10));
+            let first: u32 = digits.clone()
                 .find(|d: &Option<u32>| d.is_some())
                 .expect("There will always be one digit in a scrambled string.")
                 .unwrap();
-            let last: u32 = s
-                .chars()
-                .map(|c: char| c.to_digit(10))
+            let last: u32 = digits.clone()
                 .rfind(|d: &Option<u32>| d.is_some())
                 .expect("There will always be one digit in a scrambled string.")
                 .unwrap();
@@ -21,6 +16,19 @@ pub fn problem_1(input: String) -> u32 {
             number
         })
         .sum()
+}
+
+enum Digit {
+    Zero,
+    One,
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
 }
 
 #[cfg(test)]
