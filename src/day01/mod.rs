@@ -18,17 +18,63 @@ pub fn problem_1(input: String) -> u32 {
         .sum()
 }
 
-enum Digit {
-    Zero,
-    One,
-    Two,
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
-    Nine,
+const DIGITS: [&str; 20] = [
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "zero", "one", "two", "three", "four",
+    "five", "six", "seven", "eight", "nine",
+];
+
+fn str_to_int(s: String) -> u32 {
+    match s.parse::<u32>() {
+        Ok(n) => n,
+        Err(_) => match &*s {
+            "zero" => 0 as u32,
+            "one" => 1 as u32,
+            "two" => 2 as u32,
+            "three" => 3 as u32,
+            "four" => 4 as u32,
+            "five" => 5 as u32,
+            "six" => 6 as u32,
+            "seven" => 7 as u32,
+            "eight" => 8 as u32,
+            "nine" => 9 as u32,
+            _ => {
+                panic!("{s}")
+            }
+        },
+    }
+}
+
+pub fn problem_2(input: String) -> u32 {
+    let scrambled_coordinates: Vec<&str> = input.lines().collect();
+
+    let mut sum: u32 = 0;
+    for scrambled_coord in scrambled_coordinates {
+        let mut first: &str = "";
+        let mut last: &str = "";
+        let mut first_index: usize = scrambled_coord.len();
+        let mut last_index: usize = 0;
+
+        for n in DIGITS {
+            if let (Some(i), Some(j)) = (scrambled_coord.find(n), scrambled_coord.rfind(n)) {
+                if i < first_index {
+                    first = n;
+                    first_index = i;
+                }
+                if j >= last_index {
+                    last = n;
+                    last_index = j;
+                }
+            }
+        }
+
+        let first: u32 = str_to_int(first.to_string());
+        let last: u32 = str_to_int(last.to_string());
+
+        let final_number: u32 = format!("{first}{last}").parse().unwrap();
+        sum = sum + final_number;
+    }
+
+    sum
 }
 
 #[cfg(test)]
@@ -37,10 +83,25 @@ mod tests {
     use std::fs;
 
     #[test]
-    fn example() {
+    fn example_1() {
         let input =
             fs::read_to_string("./data/examples/01/problem1Test.txt").expect("error loading input");
         let result = problem_1(input);
         assert_eq!(result, 142 as u32);
+    }
+
+    #[test]
+    fn example_2() {
+        let input = fs::read_to_string("./data/examples/01/problem1Test2.txt")
+            .expect("error loading input");
+        let result = problem_2(input);
+        assert_eq!(result, 281 as u32);
+    }
+    #[test]
+    fn edgecases() {
+        let edges =
+            fs::read_to_string("./data/examples/01/edgecases.txt").expect("error loading input");
+        let result = problem_2(edges);
+        assert_eq!(result, 143 as u32);
     }
 }

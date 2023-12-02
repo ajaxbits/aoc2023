@@ -55,7 +55,7 @@
           };
 
           # https://devenv.sh/reference/options/
-          packages = [config.packages.default];
+          packages = [pkgs.bacon];
 
           enterShell = ''
             hello
