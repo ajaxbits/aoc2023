@@ -37,9 +37,6 @@
         # module parameters provide easy access to attributes of the same
         # system.
 
-        # Equivalent to  inputs'.nixpkgs.legacyPackages.hello;
-        packages.default = pkgs.hello;
-
         devenv.shells.default = {
           name = "aoc2023";
 
@@ -54,12 +51,7 @@
             rustfmt.enable = true;
           };
 
-          # https://devenv.sh/reference/options/
           packages = [pkgs.bacon];
-
-          enterShell = ''
-            hello
-          '';
         };
       };
       flake = {
