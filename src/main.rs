@@ -10,10 +10,10 @@ fn main() {
     let day2_1 = day02::problem_1(read_input(2));
     let day2_2 = day02::problem_2(read_input(2));
     let day3_1 = day03::problem_1(&read_input(3));
-    println!("{day1_1}");
-    println!("{day1_2}");
-    println!("{day2_1}");
-    println!("{day2_2}");
+    // println!("{day1_1}");
+    // println!("{day1_2}");
+    // println!("{day2_1}");
+    // println!("{day2_2}");
     println!("{day3_1}");
 }
 

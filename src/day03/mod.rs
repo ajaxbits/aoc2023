@@ -1,92 +1,96 @@
-use rayon::{collections::linked_list, prelude::*};
+#[derive(Debug, Eq, PartialEq, Copy, Clone, PartialOrd, Ord)]
+struct Point(i32, i32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum Color {
-    Red,
-    Blue,
-}
-
-fn get_symbol_indices(row: &str) -> Option<Vec<i32>> {
-    let indices: Vec<i32> = row
-        .par_char_indices()
-        .filter_map(|(i, c)| match !c.is_alphanumeric() && c != '.' {
-            true => Some(i as i32),
-            false => None,
-        })
-        .collect();
-
-    match !indices.is_empty() {
-        true => Some(indices),
-        false => None,
-    }
-}
-
-fn color_row(row: &str) -> Vec<Color> {
-    let len = row.len();
-    let indices: Option<Vec<i32>> = get_symbol_indices(&row);
-    let mut colors: Vec<Color> = vec![Color::Red; len];
-    if let Some(indices) = indices {
-        for i in indices {
-            colors[i as usize] = Color::Blue;
-            if i > 0 {
-                colors[(i - 1) as usize] = Color::Blue;
-            }
-            if i + 1 < len as i32 {
-                colors[(i + 1) as usize] = Color::Blue;
+fn find_symbols(rows: Vec<&str>) -> Vec<Point> {
+    let mut symbols: Vec<Point> = Vec::new();
+    for (y, row) in rows.iter().enumerate() {
+        for (x, c) in row.char_indices() {
+            if !c.is_alphanumeric() && c != '.' {
+                symbols.push(Point(x.try_into().unwrap(), y.try_into().unwrap()))
             }
         }
     }
-    colors
+    symbols
 }
 
-fn color_plane(schematic: &str) -> Vec<Vec<Color>> {
+fn find_targets(schematic: &str) -> Vec<Point> {
     let rows: Vec<&str> = schematic.lines().collect();
-    let colored_rows: Vec<Vec<Color>> = rows.iter().map(|row| color_row(row)).collect();
-    let line_len = rows[0].len();
+    let max_x = rows[0].len() as i32 - 1;
+    let max_y = rows.len() as i32 - 1;
 
-    let prepared_rows: Vec<Vec<char>> = rows
-        .into_iter()
-        .map(|row: &str| row.chars().collect::<Vec<char>>())
-        .zip(colored_rows.into_iter())
-        .map(|(row, colors): (Vec<char>, Vec<Color>)| {
-            row.into_iter()
-                .zip(colors.into_iter())
-                .map(|(c, color): (char, Color)| -> char {
-                    if color == Color::Red {
-                        c
-                    } else {
-                        '*'
-                    }
-                })
-                .collect::<Vec<char>>()
-        })
-        .collect();
+    let symbols = find_symbols(rows);
 
-    let mut cols: Vec<String> = Vec::new();
-    for i in 1..line_len {
-        let mut col: Vec<char> = Vec::new();
-        for row in prepared_rows.iter() {
-            col.push(row[i]);
+    let mut points = Vec::new();
+    for p in symbols {
+        let x = p.0;
+        let y = p.1;
+
+        #[rustfmt::skip]
+        let possibilities = vec![
+            Point(x-1, y+1), Point(x, y+1), Point(x + 1, y+1),
+            Point(x-1, y), Point(x, y), Point(x + 1, y),
+            Point(x-1, y-1), Point(x, y-1), Point(x + 1, y-1),
+        ];
+
+        for point in possibilities {
+            if (0..=max_x).contains(&point.0)
+                && (0..=max_y).contains(&point.1)
+                && !points.contains(&point)
+            {
+                points.push(point)
+            }
         }
-        let col: String = col.iter().collect();
-        cols.push(col)
     }
-    let colored_cols: Vec<Vec<Color>> = cols.iter().map(|s| color_row(s)).collect();
-
-    todo!()
+    points.sort();
+    points
 }
 
-fn find_numbers(row: &str) -> Option<Vec<i32>> {
-    todo!()
+fn get_num_points(schematic: &str) -> Vec<(i32, Vec<Point>)> {
+    let mut number_loc: Vec<(i32, Vec<Point>)> = Vec::new();
+    for (y, line) in schematic.lines().enumerate() {
+        let numbers: Vec<&str> = line
+            .split(|c: char| !c.is_ascii_digit())
+            .filter(|i| !i.is_empty())
+            .collect();
+
+        for n in numbers.iter() {
+            let mut points: Vec<Point> = Vec::new();
+
+            let start = line.find(n).expect("we know n is in line");
+            let end = start + n.len() - 1;
+            let n: i32 = n.parse().expect("all numbers will be in the i32 range");
+
+            for x in start..=end {
+                points.push(Point(x as i32, y as i32))
+            }
+
+            number_loc.push((n, points));
+        }
+    }
+
+    number_loc
 }
 
-pub fn problem_1(input: &str) -> i32 {
-    todo!()
+pub fn problem_1(schematic: &str) -> i32 {
+    let numbers = get_num_points(schematic);
+    let targets = find_targets(schematic);
+
+    let mut final_numbers: Vec<i32> = Vec::new();
+    for (n, points) in numbers.into_iter() {
+        for point in points {
+            if targets.contains(&point) && !final_numbers.contains(&n) {
+                // make sure to only deduple on the current line
+                final_numbers.push(n)
+            }
+        }
+    }
+
+    final_numbers.iter().sum()
 }
 
-pub fn problem_2(input: &str) -> i32 {
-    todo!()
-}
+// pub fn problem_2(input: &str) -> i32 {
+//     todo!()
+// }
 
 #[cfg(test)]
 mod tests {
@@ -94,37 +98,115 @@ mod tests {
     use std::fs;
 
     #[test]
-    fn test_symbol_indices() {
+    fn test_get_symbols() {
         let example =
             fs::read_to_string("./data/examples/03/problem1.txt").expect("error loading input");
         let example: Vec<&str> = example.lines().collect();
-        assert_eq!(get_symbol_indices(example[0]), None);
-        assert_eq!(get_symbol_indices(example[1]), Some(vec![3]));
-        assert_eq!(get_symbol_indices(example[8]), Some(vec![3, 5]));
+        assert_eq!(
+            find_symbols(example),
+            vec![
+                Point(3, 1),
+                Point(6, 3),
+                Point(3, 4),
+                Point(5, 5),
+                Point(3, 8),
+                Point(5, 8),
+                Point(3, 10),
+                Point(5, 10),
+                Point(8, 10),
+                Point(9, 10),
+                Point(0, 11),
+                Point(3, 11),
+                Point(5, 11),
+                Point(8, 11),
+                Point(9, 11)
+            ]
+        );
     }
 
     #[test]
-    fn test_color() {
-        use Color::{Blue, Red};
+    fn test_find_targets() {
+        let example1 = r#"
+            467..114..
+            ...*......
+            ..35..633.
+        "#;
+        let example1: String = example1
+            .trim()
+            .lines()
+            .map(|s| s.trim())
+            .collect::<Vec<&str>>()
+            .join("\n");
+        #[rustfmt::skip]
+        let mut expected1 = vec![
+            Point(2, 0), Point(3, 0), Point(4, 0),
+            Point(2, 1), Point(3, 1), Point(4, 1),
+            Point(2, 2), Point(3, 2), Point(4, 2),
+        ];
+        expected1.sort();
 
-        let example =
-            fs::read_to_string("./data/examples/03/problem1.txt").expect("error loading input");
-        let example: Vec<&str> = example.lines().collect();
-        assert_eq!(color_row(example[0]), vec![Red; 10]);
-        assert_eq!(
-            color_row(example[1]),
-            vec![Red, Red, Blue, Blue, Blue, Red, Red, Red, Red, Red]
-        );
-        assert_eq!(
-            color_row(example[10]),
-            vec![Red, Red, Blue, Blue, Blue, Blue, Blue, Blue, Blue, Blue]
-        );
+        let example2 = r#"
+            ...$.*....
+            .664.598..
+            ...$.*..*#
+        "#;
+        let example2: String = example2
+            .trim()
+            .lines()
+            .map(|s| s.trim())
+            .collect::<Vec<&str>>()
+            .join("\n");
+        #[rustfmt::skip]
+        let mut expected2 = vec![
+            Point(2, 0), Point(3, 0), Point(4, 0), Point(5, 0), Point(6, 0),
+            Point(2, 1), Point(3, 1), Point(4, 1), Point(5, 1), Point(6, 1),
+                                                                             Point(7, 1), Point(8, 1), Point(9, 1),
+            Point(2, 2), Point(3, 2), Point(4, 2), Point(5, 2), Point(6, 2), Point(7, 2), Point(8, 2), Point(9, 2),
+        ];
+        expected2.sort();
+
+        assert_eq!(find_targets(&example1), expected1);
+        assert_eq!(find_targets(&example2), expected2);
     }
 
-    // #[test]
-    // fn test_example_1() {
-    //     let example =
-    //         fs::read_to_string("./data/examples/03/problem1.txt").expect("error loading input");
-    //     assert_eq!(problem_1(&example), 4361);
-    // }
+    #[test]
+    fn test_get_num_points() {
+        let example1 = r#"
+            467..114..
+        "#;
+        let example1: String = example1
+            .trim()
+            .lines()
+            .map(|s| s.trim())
+            .collect::<Vec<&str>>()
+            .join("\n");
+        let expected1 = vec![
+            (467, vec![Point(0, 0), Point(1, 0), Point(2, 0)]),
+            (114, vec![Point(5, 0), Point(6, 0), Point(7, 0)]),
+        ];
+
+        let example2 = r#"
+            ..35..633.
+        "#;
+        let example2: String = example2
+            .trim()
+            .lines()
+            .map(|s| s.trim())
+            .collect::<Vec<&str>>()
+            .join("\n");
+        let expected2 = vec![
+            (35, vec![Point(2, 0), Point(3, 0)]),
+            (633, vec![Point(6, 0), Point(7, 0), Point(8, 0)]),
+        ];
+
+        assert_eq!(get_num_points(&example1), expected1);
+        assert_eq!(get_num_points(&example2), expected2);
+    }
+
+    #[test]
+    fn test_example_1() {
+        let example =
+            fs::read_to_string("./data/examples/03/problem1.txt").expect("error loading input");
+        assert_eq!(problem_1(&example), 4499);
+    }
 }
