@@ -1,11 +1,26 @@
 use rayon::iter::ParallelIterator;
 use rayon::str::ParallelString;
+use std::cmp::Ordering;
+use std::collections::HashMap;
+use std::hash::Hash;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct Card {
     id: i32,
     chosen: Vec<i32>,
     winning: Vec<i32>,
+}
+
+impl PartialOrd for Card {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Card {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.id.cmp(&other.id)
+    }
 }
 
 impl TryFrom<&str> for Card {
@@ -92,6 +107,50 @@ pub fn problem_1(cards: &str) -> i32 {
         .sum()
 }
 
+fn gen_inventory(cards: &[Card]) -> HashMap<Card, i32> {
+    let mut final_cards: Vec<Card> = Vec::new();
+    let winning_rosetta: Vec<(Card, i32)> = cards
+        .into_iter()
+        .map(|c| {
+            let winnings = get_winners(c.clone().chosen, c.clone().winning)
+                .unwrap_or(Vec::new())
+                .len() as i32;
+            (c.to_owned(), winnings)
+        })
+        .collect();
+
+    let mut inventory: HashMap<Card, i32> = cards.to_vec().into_iter().map(|c| (c, 1)).collect();
+    for (card, winnings) in winning_rosetta {
+        if winnings > 0 {
+            let current_amount = *inventory.get(&card).expect("This hashmap is pre-populated");
+
+            let i = card.id as usize - 1;
+            let start = i + 1;
+            let end = i + winnings as usize;
+            for card in &cards[start..=end] {
+                let amount = inventory
+                    .get_mut(&card)
+                    .expect("This hashmap is pre-populated");
+                *amount = *amount + current_amount;
+            }
+        }
+    }
+
+    inventory
+}
+
+pub fn problem_2(cards: &str) -> i32 {
+    let cards: Vec<Card> = cards
+        .par_lines()
+        .map(|c: &str| -> Card { c.try_into().expect("could not parse line as Card") })
+        .collect();
+
+    gen_inventory(&cards[..])
+        .iter()
+        .map(|(_card, amount)| amount)
+        .sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -149,9 +208,30 @@ mod tests {
     }
 
     #[test]
+    fn test_find_copies() {
+        let example =
+            fs::read_to_string("./data/examples/04/problem1.txt").expect("error loading input");
+        let example: Vec<Card> = example.lines().map(|s| s.try_into().unwrap()).collect();
+        let inventory: HashMap<Card, i32> = gen_inventory(&example[..]);
+        let mut ids: Vec<(i32, i32)> = inventory.into_iter().map(|(c, a)| (c.id, a)).collect();
+        ids.sort();
+
+        let expected: Vec<(i32, i32)> = vec![(1, 1), (2, 2), (3, 4), (4, 8), (5, 14), (6, 1)];
+
+        assert_eq!(ids, expected);
+    }
+
+    #[test]
     fn test_example_1() {
         let example =
             fs::read_to_string("./data/examples/04/problem1.txt").expect("error loading input");
         assert_eq!(problem_1(&example), 13);
+    }
+
+    #[test]
+    fn test_example_2() {
+        let example =
+            fs::read_to_string("./data/examples/04/problem1.txt").expect("error loading input");
+        assert_eq!(problem_2(&example), 30);
     }
 }

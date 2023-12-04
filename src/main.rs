@@ -12,6 +12,7 @@ fn main() {
     let day2_2 = day02::problem_2(read_input(2));
     // let day3_1 = day03::problem_1(&read_input(3));
     let day4_1 = day04::problem_1(&read_input(4));
+    let day4_2 = day04::problem_2(&read_input(4));
 
     println!("Day 1, problem 1: {day1_1}");
     println!("Day 1, problem 2: {day1_2}");
@@ -19,6 +20,7 @@ fn main() {
     println!("Day 1, problem 2: {day2_2}");
     // println!("{day3_1}");
     println!("Day 4, problem 1: {day4_1}");
+    println!("Day 4, problem 2: {day4_2}");
 }
 
 fn read_input(day: i32) -> String {
