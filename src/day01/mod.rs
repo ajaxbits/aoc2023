@@ -27,16 +27,16 @@ fn str_to_int(s: String) -> u32 {
     match s.parse::<u32>() {
         Ok(n) => n,
         Err(_) => match &*s {
-            "zero" => 0 as u32,
-            "one" => 1 as u32,
-            "two" => 2 as u32,
-            "three" => 3 as u32,
-            "four" => 4 as u32,
-            "five" => 5 as u32,
-            "six" => 6 as u32,
-            "seven" => 7 as u32,
-            "eight" => 8 as u32,
-            "nine" => 9 as u32,
+            "zero" => 0_u32,
+            "one" => 1_u32,
+            "two" => 2_u32,
+            "three" => 3_u32,
+            "four" => 4_u32,
+            "five" => 5_u32,
+            "six" => 6_u32,
+            "seven" => 7_u32,
+            "eight" => 8_u32,
+            "nine" => 9_u32,
             _ => {
                 panic!("{s}")
             }
@@ -71,7 +71,7 @@ pub fn problem_2(input: String) -> u32 {
         let last: u32 = str_to_int(last.to_string());
 
         let final_number: u32 = format!("{first}{last}").parse().unwrap();
-        sum = sum + final_number;
+        sum += final_number;
     }
 
     sum

@@ -37,13 +37,12 @@ const BAG_1: Set = Set(12, 13, 14);
 fn get_game_id(input: String) -> i32 {
     let id: i32 = input
         .split(':')
-        .nth(0)
+        .next()
         .expect("all strings have at least one colon, and a game id before it")
         .strip_prefix("Game ")
         .expect("all strings have a Game substring before the colon")
         .parse()
         .expect("everything after Game, but before the colon will be a i32");
-    // println!("{id}");
     id
 }
 

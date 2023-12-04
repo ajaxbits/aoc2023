@@ -28,11 +28,11 @@ impl TryFrom<&str> for Card {
 
     fn try_from(line: &str) -> Result<Self, Self::Error> {
         let id: &str = line
-            .split(":")
-            .nth(0)
+            .split(':')
+            .next()
             .expect("there is always at aleast one colon");
         let numbers: &str = line
-            .split(":")
+            .split(':')
             .nth(1)
             .expect("there is always at aleast one colon");
         let id: i32 = id
@@ -101,25 +101,21 @@ pub fn problem_1(cards: &str) -> i32 {
         })
         .collect();
 
-    scores
-        .into_iter()
-        .filter_map(|score: Option<i32>| score)
-        .sum()
+    scores.into_iter().flatten().sum() // unpacks the Option!
 }
 
 fn gen_inventory(cards: &[Card]) -> HashMap<Card, i32> {
-    let mut final_cards: Vec<Card> = Vec::new();
     let winning_rosetta: Vec<(Card, i32)> = cards
-        .into_iter()
+        .iter()
         .map(|c| {
             let winnings = get_winners(c.clone().chosen, c.clone().winning)
-                .unwrap_or(Vec::new())
+                .unwrap_or_default()
                 .len() as i32;
             (c.to_owned(), winnings)
         })
         .collect();
 
-    let mut inventory: HashMap<Card, i32> = cards.to_vec().into_iter().map(|c| (c, 1)).collect();
+    let mut inventory: HashMap<Card, i32> = cards.iter().cloned().map(|c| (c, 1)).collect();
     for (card, winnings) in winning_rosetta {
         if winnings > 0 {
             let current_amount = *inventory.get(&card).expect("This hashmap is pre-populated");
@@ -129,9 +125,9 @@ fn gen_inventory(cards: &[Card]) -> HashMap<Card, i32> {
             let end = i + winnings as usize;
             for card in &cards[start..=end] {
                 let amount = inventory
-                    .get_mut(&card)
+                    .get_mut(card)
                     .expect("This hashmap is pre-populated");
-                *amount = *amount + current_amount;
+                *amount += current_amount;
             }
         }
     }
@@ -145,10 +141,7 @@ pub fn problem_2(cards: &str) -> i32 {
         .map(|c: &str| -> Card { c.try_into().expect("could not parse line as Card") })
         .collect();
 
-    gen_inventory(&cards[..])
-        .iter()
-        .map(|(_card, amount)| amount)
-        .sum()
+    gen_inventory(&cards[..]).values().sum()
 }
 
 #[cfg(test)]
